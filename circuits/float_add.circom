@@ -203,8 +203,19 @@ template CheckWellFormedness(k, p) {
 template RightShift(shift) {
     signal input x;
     signal output y;
+    signal shifted_x;
+    signal rightmost_bits;
 
-    // TODO
+    shifted_x <-- x >> shift;
+    rightmost_bits <-- x & (2**shift - 1);
+    component checkBitLength = CheckBitLength(shift);
+    checkBitLength.in <== rightmost_bits;
+    checkBitLength.out === 1;
+    component isEqual = IsEqual();
+    isEqual.in[0] <== shifted_x * 2**shift + rightmost_bits;
+    isEqual.in[1] <== x;
+    isEqual.out === 1;
+    y <== shifted_x;
 }
 
 /*
