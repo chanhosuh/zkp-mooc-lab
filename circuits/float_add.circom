@@ -145,9 +145,18 @@ template LessThan(n) {
 template CheckBitLength(b) {
     signal input in;
     signal output out;
+    signal bits[b];
 
-    out <-- (in >> b) ? 0 : 1;
-    out * (out - 1) === 0;
+    var new_in = 0;
+    for (var i = 0; i < b; i++) {
+        bits[i] <-- in >> i & 1;
+        bits[i] * (bits[i] - 1) === 0;
+        new_in += bits[i] * 2**i; 
+    }
+    component isEqual = IsEqual();
+    isEqual.in[0] <== in;
+    isEqual.in[1] <== new_in;
+    out <== isEqual.out;
 }
 
 /*
