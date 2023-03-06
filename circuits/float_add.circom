@@ -274,8 +274,19 @@ template LeftShift(shift_bound) {
     signal input shift;
     signal input skip_checks;
     signal output y;
+    signal shifted_y;
+    signal shift_multiplier;
 
-    // TODO
+    shift_multiplier <-- 2**shift;
+    component lessThan = LessThan(shift_bound);
+    lessThan.in[0] <== shift_multiplier;
+    lessThan.in[1] <== 2**shift_bound;
+
+    y <-- x << shift;
+    component isEqual = IsEqual();
+    isEqual.in[0] <== x * shift_multiplier;
+    isEqual.in[1] <== y;
+    isEqual.out === 1;
 }
 
 /*
