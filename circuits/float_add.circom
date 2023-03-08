@@ -296,24 +296,25 @@ template LeftShift(shift_bound) {
     checkLessThanBound.in[1] <== shift_bound;
     (1 - checkLessThanBound.out) * (1 - skip_checks) === 0;
 
-    component isLessThanShift[shift_bound];
+    signal multiplier[shift_bound];
     for (var i = 0; i < shift_bound; i++) {
-        isLessThanShift[i] = LessThan(num_bits);
-        isLessThanShift[i].in[0] <== i;
-        isLessThanShift[i].in[1] <== shift;
+        multiplier[i] <-- (i < shift) ? 2: 1;
+        (1 - multiplier[i]) * (2 - multiplier[i]) === 0;
     }
 
-    component multiplier[shift_bound];
-    multiplier[0] = ConditionalDoubler();
-    multiplier[0].cond <== isLessThanShift[0].out;
-    multiplier[0].in <== x;
+    var sum_of_multiplier_bits = 0;
+    for (var i = 0; i < shift_bound; i++) {
+        sum_of_multiplier_bits += multiplier[i] - 1;
+    }
+    sum_of_multiplier_bits === shift;
+
+    signal shifted_numbers[shift_bound];
+    shifted_numbers[0] <== x;
     for (var i = 1; i < shift_bound; i++) {
-        multiplier[i] = ConditionalDoubler();
-        multiplier[i].cond <== isLessThanShift[i].out;
-        multiplier[i].in <== multiplier[i-1].out;
+        shifted_numbers[i] <== multiplier[i-1] * shifted_numbers[i-1];
     }
 
-    y <== multiplier[shift_bound - 1].out;
+    y <== shifted_numbers[shift_bound - 1];
 }
 
 /*
