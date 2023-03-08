@@ -264,6 +264,16 @@ template RoundAndCheck(k, p, P) {
     m_out <== if_else[1].out;
 }
 
+
+
+template ConditionalDoubler(){
+    signal input in;
+    signal input cond;
+    signal output out;
+
+    out <== (cond + 1) * in;
+}
+
 /*
  * Left-shifts `x` by `shift` bits to output `y`.
  * Enforces 0 <= `shift` < `shift_bound`.
@@ -274,19 +284,36 @@ template LeftShift(shift_bound) {
     signal input shift;
     signal input skip_checks;
     signal output y;
-    signal shifted_y;
-    signal shift_multiplier;
 
-    shift_multiplier <-- 2**shift;
-    component lessThan = LessThan(shift_bound);
-    lessThan.in[0] <== shift_multiplier;
-    lessThan.in[1] <== 2**shift_bound;
+    var num_bits = 0;
+    var _shift_bound = shift_bound;
+    while (_shift_bound != 0) {
+        _shift_bound =_shift_bound >> 1;
+        num_bits += 1;
+    }
+    component checkLessThanBound = LessThan(num_bits);
+    checkLessThanBound.in[0] <== shift;
+    checkLessThanBound.in[1] <== shift_bound;
+    (1 - checkLessThanBound.out) * (1 - skip_checks) === 0;
 
-    y <-- x << shift;
-    component isEqual = IsEqual();
-    isEqual.in[0] <== x * shift_multiplier;
-    isEqual.in[1] <== y;
-    isEqual.out === 1;
+    component isLessThanShift[shift_bound];
+    for (var i = 0; i < shift_bound; i++) {
+        isLessThanShift[i] = LessThan(num_bits);
+        isLessThanShift[i].in[0] <== i;
+        isLessThanShift[i].in[1] <== shift;
+    }
+
+    component multiplier[shift_bound];
+    multiplier[0] = ConditionalDoubler();
+    multiplier[0].cond <== isLessThanShift[0].out;
+    multiplier[0].in <== x;
+    for (var i = 1; i < shift_bound; i++) {
+        multiplier[i] = ConditionalDoubler();
+        multiplier[i].cond <== isLessThanShift[i].out;
+        multiplier[i].in <== multiplier[i-1].out;
+    }
+
+    y <== multiplier[shift_bound - 1].out;
 }
 
 /*
