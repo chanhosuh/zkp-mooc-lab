@@ -285,20 +285,9 @@ template LeftShift(shift_bound) {
     signal input skip_checks;
     signal output y;
 
-    var num_bits = 0;
-    var _shift_bound = shift_bound;
-    while (_shift_bound != 0) {
-        _shift_bound =_shift_bound >> 1;
-        num_bits += 1;
-    }
-    component checkLessThanBound = LessThan(num_bits);
-    checkLessThanBound.in[0] <== shift;
-    checkLessThanBound.in[1] <== shift_bound;
-    (1 - checkLessThanBound.out) * (1 - skip_checks) === 0;
-
     signal multiplier[shift_bound];
     for (var i = 0; i < shift_bound; i++) {
-        multiplier[i] <-- (i < shift) ? 2: 1;
+        multiplier[i] <-- (i < shift)*(1 - skip_checks) ? 2: 1;
         (1 - multiplier[i]) * (2 - multiplier[i]) === 0;
     }
 
@@ -306,7 +295,8 @@ template LeftShift(shift_bound) {
     for (var i = 0; i < shift_bound; i++) {
         sum_of_multiplier_bits += multiplier[i] - 1;
     }
-    sum_of_multiplier_bits === shift;
+    sum_of_multiplier_bits === shift * (1 - skip_checks);
+    multiplier[shift_bound - 1] === 1;
 
     signal shifted_numbers[shift_bound];
     shifted_numbers[0] <== x;
