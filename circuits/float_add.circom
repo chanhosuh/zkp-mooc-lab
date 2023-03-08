@@ -295,6 +295,12 @@ template LeftShift(shift_bound) {
     for (var i = 0; i < shift_bound; i++) {
         sum_of_multiplier_bits += multiplier[i] - 1;
     }
+    // When check is not active, multiplier is populated by 1s only, thus:
+    // 1) the sum on the LHS is always zero
+    // 2) end of multiplier array is always 1
+    // and these constraints always hold.
+    // When check is active, 2nd constraint checks shift < shift_bound
+    // and 1st constraint check we have the right number of 2s.
     sum_of_multiplier_bits === shift * (1 - skip_checks);
     multiplier[shift_bound - 1] === 1;
 
