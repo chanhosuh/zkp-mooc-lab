@@ -146,6 +146,7 @@ template CheckBitLength(b) {
     signal input in;
     signal output out;
     signal bits[b];
+    signal extra_in;
 
     var new_in = 0;
     for (var i = 0; i < b; i++) {
@@ -153,10 +154,12 @@ template CheckBitLength(b) {
         bits[i] * (bits[i] - 1) === 0;
         new_in += bits[i] * 2**i; 
     }
-    component isEqual = IsEqual();
-    isEqual.in[0] <== in;
-    isEqual.in[1] <== new_in;
-    out <== isEqual.out;
+    extra_in <-- in >> b;
+    new_in += 2**b * extra_in;
+    in === new_in;
+    component isZero = IsZero();
+    isZero.in <== extra_in;
+    isZero.out ==> out;
 }
 
 /*
