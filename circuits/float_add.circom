@@ -154,9 +154,11 @@ template CheckBitLength(b) {
         bits[i] * (bits[i] - 1) === 0;
         new_in += bits[i] * 2**i; 
     }
+
     extra_in <-- in >> b;
     new_in += 2**b * extra_in;
     in === new_in;
+
     component isZero = IsZero();
     isZero.in <== extra_in;
     isZero.out ==> out;
@@ -316,6 +318,17 @@ template LeftShift(shift_bound) {
     y <== shifted_numbers[shift_bound - 1];
 }
 
+
+template GreaterThanOrEqual(b) {
+    signal input in[2];
+    signal output out;
+
+    component lessThan = LessThan(b);
+    lessThan.in[0] <== in[0];
+    lessThan.in[1] <== in[1];
+    out <== 1 - lessThan.out;
+}
+
 /*
  * Find the Most-Significant Non-Zero Bit (MSNZB) of `in`, where `in` is assumed to be non-zero value of `b` bits.
  * Outputs the MSNZB as a one-hot vector `one_hot` of `b` bits, where `one_hot`[i] = 1 if MSNZB(`in`) = i and 0 otherwise.
@@ -328,7 +341,26 @@ template MSNZB(b) {
     signal input skip_checks;
     signal output one_hot[b];
 
-    // TODO
+    component isZero = IsZero();
+    isZero.in <== in;
+    isZero.out * (1 - skip_checks) === 0;
+
+    component lessThan[b];
+    component greaterThanOrEqual[b];
+    for (var i = 0; i < b; i++) {
+        lessThan[i] = LessThan(b);
+        lessThan[i].in[0] <== in;
+        lessThan[i].in[1] <== 2**(i+1);
+    }
+    for (var i = 0; i < b; i++) {
+        greaterThanOrEqual[i] = GreaterThanOrEqual(b);
+        greaterThanOrEqual[i].in[0] <== in;
+        greaterThanOrEqual[i].in[1] <== 2**i;
+    }
+
+    for (var i = 0; i < b; i++) {
+        one_hot[i] <== lessThan[i].out * greaterThanOrEqual[i].out;
+    }
 }
 
 /*
