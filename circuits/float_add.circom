@@ -160,9 +160,9 @@ template CheckBitLength(b) {
     new_in += 2**b * extra_in;
     in === new_in;
 
-    component isZero = IsZero();
-    isZero.in <== extra_in;
-    isZero.out ==> out;
+    component is_zero = IsZero();
+    is_zero.in <== extra_in;
+    is_zero.out ==> out;
 }
 
 /*
@@ -324,10 +324,10 @@ template GreaterThanOrEqual(b) {
     signal input in[2];
     signal output out;
 
-    component lessThan = LessThan(b);
-    lessThan.in[0] <== in[0];
-    lessThan.in[1] <== in[1];
-    out <== 1 - lessThan.out;
+    component less_than = LessThan(b);
+    less_than.in[0] <== in[0];
+    less_than.in[1] <== in[1];
+    out <== 1 - less_than.out;
 }
 
 /*
@@ -342,9 +342,9 @@ template MSNZB(b) {
     signal input skip_checks;
     signal output one_hot[b];
 
-    component isZero = IsZero();
-    isZero.in <== in;
-    isZero.out * (1 - skip_checks) === 0;
+    component is_zero = IsZero();
+    is_zero.in <== in;
+    is_zero.out * (1 - skip_checks) === 0;
 
     component num2Bits = Num2Bits(b);
     num2Bits.in <== in;
@@ -358,16 +358,16 @@ template MSNZB(b) {
         sum_up_to[i] <== sum_so_far;
     }
 
-    component greaterThanOrEqual[b];
+    component greater_than_or_equal[b];
     var num_significant_bits = 0;
     for (var i = 0; i < b; i++) {
-        greaterThanOrEqual[i] = IsEqual();
-        greaterThanOrEqual[i].in[0] <== sum_up_to[i];
-        greaterThanOrEqual[i].in[1] <== in;
+        greater_than_or_equal[i] = IsEqual();
+        greater_than_or_equal[i].in[0] <== sum_up_to[i];
+        greater_than_or_equal[i].in[1] <== in;
     }
 
     for (var i = 0; i < b; i++) {
-        one_hot[i] <== in_bits[i] * greaterThanOrEqual[i].out;
+        one_hot[i] <== in_bits[i] * greater_than_or_equal[i].out;
     }
 }
 
@@ -413,21 +413,21 @@ template FloatAdd(k, p) {
     signal output e_out;
     signal output m_out;
 
-    component checkWellFormedness[2];
-    checkWellFormedness[0] = CheckWellFormedness(k, p);
-    checkWellFormedness[1] = CheckWellFormedness(k, p);
+    component check_well_formedness[2];
+    check_well_formedness[0] = CheckWellFormedness(k, p);
+    check_well_formedness[1] = CheckWellFormedness(k, p);
 
     signal magnitudes[2];
-    component leftShifts[2];
+    component left_shifts[2];
     for (var i = 0; i < 2; i++) {
-        checkWellFormedness[i].e <== e[i];
-        checkWellFormedness[i].m <== m[i];
+        check_well_formedness[i].e <== e[i];
+        check_well_formedness[i].m <== m[i];
 
-        leftShifts[i] = LeftShift(p+2);
-        leftShifts[i].x <== e[i];
-        leftShifts[i].shift <== p + 1;
-        leftShifts[i].skip_checks <== 0;
-        magnitudes[i] <== leftShifts[i].y + m[i];
+        left_shifts[i] = LeftShift(p+2);
+        left_shifts[i].x <== e[i];
+        left_shifts[i].shift <== p + 1;
+        left_shifts[i].skip_checks <== 0;
+        magnitudes[i] <== left_shifts[i].y + m[i];
     }
 
     // (`outL`, `outR`) = `sel` ? (`R`, `L`) : (`L`, `R`)
