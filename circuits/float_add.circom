@@ -345,21 +345,28 @@ template MSNZB(b) {
     isZero.in <== in;
     isZero.out * (1 - skip_checks) === 0;
 
-    component lessThan[b];
-    component greaterThanOrEqual[b];
+    component num2Bits = Num2Bits(b);
+    num2Bits.in <== in;
+    signal in_bits[b] <== num2Bits.bits;
+
+    var sum_so_far = 0;
+    signal sum_up_to[b];
     for (var i = 0; i < b; i++) {
-        lessThan[i] = LessThan(b);
-        lessThan[i].in[0] <== in;
-        lessThan[i].in[1] <== 2**(i+1);
+        // in_bits[i] <-- (in >> i) & 1;
+        sum_so_far += in_bits[i] * 2**i;
+        sum_up_to[i] <== sum_so_far;
     }
+
+    component greaterThanOrEqual[b];
+    var num_significant_bits = 0;
     for (var i = 0; i < b; i++) {
-        greaterThanOrEqual[i] = GreaterThanOrEqual(b);
-        greaterThanOrEqual[i].in[0] <== in;
-        greaterThanOrEqual[i].in[1] <== 2**i;
+        greaterThanOrEqual[i] = IsEqual();
+        greaterThanOrEqual[i].in[0] <== sum_up_to[i];
+        greaterThanOrEqual[i].in[1] <== in;
     }
 
     for (var i = 0; i < b; i++) {
-        one_hot[i] <== lessThan[i].out * greaterThanOrEqual[i].out;
+        one_hot[i] <== in_bits[i] * greaterThanOrEqual[i].out;
     }
 }
 
