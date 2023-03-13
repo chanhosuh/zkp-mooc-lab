@@ -210,22 +210,15 @@ template RightShift(b, shift) {
     assert(shift < b);
     signal input x;
     signal output y;
-    signal shifted_x;
-    signal rightmost_bits;
 
-    component checkInputBitLength = CheckBitLength(b);
-    checkInputBitLength.in <== x;
-    checkInputBitLength.out === 1;
+    component num2Bits = Num2Bits(b);
+    num2Bits.in <== x;
+    signal in_bits[b] <== num2Bits.bits;
 
-    shifted_x <-- x >> shift;
-    rightmost_bits <-- x & (2**shift - 1);
-    component checkBitLength = CheckBitLength(shift);
-    checkBitLength.in <== rightmost_bits;
-    checkBitLength.out === 1;
-    component isEqual = IsEqual();
-    isEqual.in[0] <== shifted_x * 2**shift + rightmost_bits;
-    isEqual.in[1] <== x;
-    isEqual.out === 1;
+    var shifted_x = 0;
+    for (var i = 0; i < b - shift; i++) {
+        shifted_x += 2**i * in_bits[i + shift];
+    }
     y <== shifted_x;
 }
 
