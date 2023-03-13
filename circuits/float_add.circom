@@ -413,5 +413,76 @@ template FloatAdd(k, p) {
     signal output e_out;
     signal output m_out;
 
-    // TODO
+    component checkWellFormedness[2];
+    checkWellFormedness[0] = CheckWellFormedness(k, p);
+    checkWellFormedness[1] = CheckWellFormedness(k, p);
+
+    signal magnitudes[2];
+    component leftShifts[2];
+    for (var i = 0; i < 2; i++) {
+        checkWellFormedness[i].e <== e[i];
+        checkWellFormedness[i].m <== m[i];
+
+        leftShifts[i] = LeftShift(p+2);
+        leftShifts[i].x <== e[i];
+        leftShifts[i].shift <== p + 1;
+        leftShifts[i].skip_checks <== 0;
+        magnitudes[i] <== leftShifts[i].y + m[i];
+    }
+
+    // (`outL`, `outR`) = `sel` ? (`R`, `L`) : (`L`, `R`)
+    component compare_magnitudes = LessThan(k + p + 1);
+    compare_magnitudes.in[0] <== magnitudes[1];
+    compare_magnitudes.in[1] <== magnitudes[0];
+    component switch_mantissa = Switcher();
+    switch_mantissa.sel <==  compare_magnitudes.out;
+    switch_mantissa.R <== m[0];
+    switch_mantissa.L <== m[1];
+    component switch_exponent = Switcher();
+    switch_exponent.sel <==  compare_magnitudes.out;
+    switch_exponent.R <== e[0];
+    switch_exponent.L <== e[1];
+
+    signal alpha_m <== switch_mantissa.outL;
+    signal alpha_e <== switch_exponent.outL;
+
+    signal beta_m <== switch_mantissa.outR;
+    signal beta_e <== switch_exponent.outR;
+    
+    signal diff <== alpha_e - beta_e;
+    component compare_exp_diff = LessThan(k);
+    compare_exp_diff.in[0] <== p + 1;
+    compare_exp_diff.in[1] <== diff;
+    component is_zero = IsZero();
+    is_zero.in <== alpha_e;
+    component or = OR();
+    or.a <== compare_exp_diff.out;
+    or.b <== is_zero.out; 
+    
+    component if_trivial_case_e = IfThenElse();
+    if_trivial_case_e.cond <== or.out;
+    if_trivial_case_e.L <== alpha_e;
+
+    component if_trivial_case_m = IfThenElse();
+    if_trivial_case_m.cond <== or.out;
+    if_trivial_case_m.L <== alpha_m;
+    
+    component shift_left = LeftShift(p + 2);
+    shift_left.x <== alpha_m;
+    shift_left.shift <== diff;
+    shift_left.skip_checks <== or.out;
+    component normalize = Normalize(k, p, 2*p + 1);
+    normalize.m <== shift_left.y + beta_m;
+    normalize.e <== beta_e;
+    normalize.skip_checks <== or.out;
+
+    component round_and_check = RoundAndCheck(k, p, 2*p +1);
+    round_and_check.e <== normalize.e_out;
+    round_and_check.m <== normalize.m_out;
+
+    if_trivial_case_m.R <== round_and_check.m_out;
+    if_trivial_case_e.R <== round_and_check.e_out;
+    
+    e_out <== if_trivial_case_e.out;
+    m_out <== if_trivial_case_m.out;
 }
