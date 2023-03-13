@@ -386,10 +386,6 @@ template Normalize(k, p, P) {
     signal output m_out;
     assert(P > p);
 
-    component isZero = IsZero();
-    isZero.in <== m;
-    isZero.out * (1 - skip_checks) === 0;
-
     component msnzb = MSNZB(P+1);
     msnzb.in <== m; 
     msnzb.skip_checks <== skip_checks;
