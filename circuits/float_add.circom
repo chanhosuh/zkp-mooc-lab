@@ -213,6 +213,10 @@ template RightShift(b, shift) {
     signal shifted_x;
     signal rightmost_bits;
 
+    component checkInputBitLength = CheckBitLength(b);
+    checkInputBitLength.in <== x;
+    checkInputBitLength.out === 1;
+
     shifted_x <-- x >> shift;
     rightmost_bits <-- x & (2**shift - 1);
     component checkBitLength = CheckBitLength(shift);
